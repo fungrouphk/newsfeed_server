@@ -7,6 +7,7 @@ import math
 import clustering
 from clustering import Vector, Cluster
 import json
+import time
  
 # only consider certain type of word
 def preprocess(segList):
@@ -35,11 +36,12 @@ def printList(l):
     print repr(l).decode("unicode_escape")
 
 if __name__ == "__main__":
-    jieba.set_dictionary('jieba/extra_dict/dict.txt.big')
+    start_time = time.time()
+    jieba.set_dictionary('jieba/dict.txt.big')
+    jieba.initialize()
     news_rss_url = "http://hk.news.yahoo.com/rss/hong-kong"
     # news_rss_url = "http://hk.news.yahoo.com/rss/china"
     info = feedparser.parse(news_rss_url)
-    printList(info.entries)
     for entry in info.entries:
         # word count of each word of summary
         word_list = getBagOfWords(preprocess(pseg.cut(stripTag(entry.summary))))
@@ -68,4 +70,6 @@ if __name__ == "__main__":
         for vector in cluster.listOfVectors:
             printList(vector.data["title"])
         print "____END_OF_CLUSTER___"
+    elapsed_time = time.time() - start_time
+    print "Elapsed Time: %d" % (elapsed_time)
     

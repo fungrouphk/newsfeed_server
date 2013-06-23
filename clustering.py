@@ -5,6 +5,8 @@ Created on May 25, 2013
 '''
 import math
 import sys
+from numpy import array
+
 
 class Vector:
     def __init__(self, data):
@@ -52,6 +54,11 @@ class Cluster:
 # Repeat until the distance between each cluster > certain limit
 
 def clustering(listOfClustering):
+    similarityCache = {}
+    for cluster in listOfClustering:
+        for otherCluster in listOfClustering:
+            similarityCache[(cluster.centroidVector, otherCluster.centroidVector)] = cluster.getSimilarity(otherCluster)
+
     while True:
         maxSimilarity = 0.3
         targetClusterA = None
@@ -60,7 +67,7 @@ def clustering(listOfClustering):
             for otherCluster in listOfClustering:
                 if cluster == otherCluster:
                     continue
-                similarity = cluster.getSimilarity(otherCluster)
+                similarity = similarityCache[(cluster.centroidVector, otherCluster.centroidVector)]
                 if similarity >= maxSimilarity:
                     maxSimilarity = similarity
                     targetClusterA = cluster
