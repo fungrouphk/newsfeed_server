@@ -8,6 +8,7 @@ import clustering
 from clustering import Vector, Cluster
 import json
 import time
+from db import News
  
 # only consider certain type of word
 def preprocess(segList):
@@ -64,10 +65,12 @@ if __name__ == "__main__":
     clusters = clustering.clustering([Cluster([Vector(entry)]) for entry in info.entries])
 
     # Print the result        
-    for cluster in clusters:
-        print "____FINAL___CLUSTER___"
+    for (index, cluster) in enumerate(clusters):
+        print "____FINAL___CLUSTER___" + str(index)
         printList("CENTROID: " + cluster.centroidVector.data["title"])
         for vector in cluster.listOfVectors:
+            news = News(index, (vector == cluster.centroidVector), vector.data["title"], vector.data["published"], vector.data["link"])
+            news.save()
             printList(vector.data["title"])
         print "____END_OF_CLUSTER___"
     elapsed_time = time.time() - start_time

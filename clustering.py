@@ -5,7 +5,6 @@ Created on May 25, 2013
 '''
 import math
 import sys
-from numpy import array
 
 
 class Vector:
@@ -57,7 +56,8 @@ def clustering(listOfClustering):
     similarityCache = {}
     for cluster in listOfClustering:
         for otherCluster in listOfClustering:
-            similarityCache[(cluster.centroidVector, otherCluster.centroidVector)] = cluster.getSimilarity(otherCluster)
+            if not frozenset([cluster.centroidVector, otherCluster.centroidVector]) in similarityCache:
+                similarityCache[frozenset([cluster.centroidVector, otherCluster.centroidVector])] = cluster.getSimilarity(otherCluster)
 
     while True:
         maxSimilarity = 0.3
@@ -67,12 +67,12 @@ def clustering(listOfClustering):
             for otherCluster in listOfClustering:
                 if cluster == otherCluster:
                     continue
-                similarity = similarityCache[(cluster.centroidVector, otherCluster.centroidVector)]
+                similarity = similarityCache[frozenset([cluster.centroidVector, otherCluster.centroidVector])]
                 if similarity >= maxSimilarity:
                     maxSimilarity = similarity
                     targetClusterA = cluster
                     targetClusterB = otherCluster
-        if targetClusterA == None or targetClusterA == None:
+        if targetClusterA == None or targetClusterB == None:
             break
         listOfClustering.append(Cluster(targetClusterA.listOfVectors + targetClusterB.listOfVectors))
         listOfClustering.remove(targetClusterA)
