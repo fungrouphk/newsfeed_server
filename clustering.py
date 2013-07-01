@@ -5,17 +5,22 @@ Created on May 25, 2013
 '''
 import math
 import sys
+import time
 
 
 class Vector:
     def __init__(self, data):
         self.data = data
     def getSimilarity(self, otherVector):
-        terms = set(self.getVector()).union(otherVector.getVector())
-        dotprod = sum(self.getVector().get(k, 0) * otherVector.getVector().get(k, 0) for k in terms)
-        magA = math.sqrt(sum(self.getVector().get(k, 0) ** 2 for k in terms))
-        magB = math.sqrt(sum(otherVector.getVector().get(k, 0) ** 2 for k in terms))
+        terms = self.getVector() | otherVector.getVector()
+        selfBagOfWord = self.getVector()
+        otherBagOfWord = otherVector.getVector()
+        dotprod = sum(selfBagOfWord.get(k, 0) * otherBagOfWord.get(k, 0) for k in terms)
+        magA = math.sqrt(sum(selfBagOfWord.get(k, 0) ** 2 for k in terms))
+        magB = math.sqrt(sum(otherBagOfWord.get(k, 0) ** 2 for k in terms))
         return dotprod / (magA * magB)
+    
+    
     def getDissimilarity(self, otherVector):
         return 1 - self.getSimilarity(otherVector)
     
@@ -25,17 +30,20 @@ class Vector:
 
 
 class Cluster:
-    def __init__(self, listOfVectors):
+    def __init__(self, listOfVectors, similarityCache = None):
         self.listOfVectors = listOfVectors
-        self.centroidVector = self._findCentroid()
-  
-    def _findCentroid(self):
+        if similarityCache is None:
+            self.centroidVector = self.listOfVectors[0]
+        else: 
+            self.centroidVector = self._findCentroid(similarityCache)
+
+    def _findCentroid(self, similarityCache):
         minDissimilarity = sys.maxint
         centroidVector = None
         for vector in self.listOfVectors:
             totalDissimilarity = 0
             for otherVector in self.listOfVectors:
-                totalDissimilarity += vector.getDissimilarity(otherVector)
+                totalDissimilarity += (1 - similarityCache[frozenset([vector, otherVector])])
             if totalDissimilarity < minDissimilarity:
                 centroidVector = vector
                 minDissimilarity = totalDissimilarity
@@ -53,20 +61,22 @@ class Cluster:
 # Repeat until the distance between each cluster > certain limit
 
 def clustering(listOfClustering):
+    start_time = time.clock()
+
     similarityCache = {}
     for cluster in listOfClustering:
         for otherCluster in listOfClustering:
             if not frozenset([cluster.centroidVector, otherCluster.centroidVector]) in similarityCache:
                 similarityCache[frozenset([cluster.centroidVector, otherCluster.centroidVector])] = cluster.getSimilarity(otherCluster)
 
+    print ("cache " + str(time.clock() - start_time))
+
     while True:
         maxSimilarity = 0.3
         targetClusterA = None
         targetClusterB = None
-        for cluster in listOfClustering:
-            for otherCluster in listOfClustering:
-                if cluster == otherCluster:
-                    continue
+        for (index, cluster) in enumerate(listOfClustering):
+            for otherCluster in listOfClustering[index + 1 :]:
                 similarity = similarityCache[frozenset([cluster.centroidVector, otherCluster.centroidVector])]
                 if similarity >= maxSimilarity:
                     maxSimilarity = similarity
@@ -74,7 +84,7 @@ def clustering(listOfClustering):
                     targetClusterB = otherCluster
         if targetClusterA == None or targetClusterB == None:
             break
-        listOfClustering.append(Cluster(targetClusterA.listOfVectors + targetClusterB.listOfVectors))
+        listOfClustering.append(Cluster((targetClusterA.listOfVectors + targetClusterB.listOfVectors), similarityCache))
         listOfClustering.remove(targetClusterA)
         listOfClustering.remove(targetClusterB)  
     return listOfClustering
